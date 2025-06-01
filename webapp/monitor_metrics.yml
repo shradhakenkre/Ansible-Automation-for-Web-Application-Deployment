@@ -1,0 +1,29 @@
+---
+- name: Monitor system performance metrics
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+    - name: Collect CPU usage
+      ansible.builtin.shell: top -bn1 | grep "Cpu(s)"
+      register: cpu_output
+
+    - name: Print CPU usage
+      ansible.builtin.debug:
+        var: cpu_output.stdout
+
+    - name: Collect memory usage
+      ansible.builtin.shell: free -h
+      register: memory_output
+
+    - name: Print memory usage
+      ansible.builtin.debug:
+        var: memory_output.stdout
+
+    - name: Measure HTTP response time
+      ansible.builtin.shell: curl -o /dev/null -s -w "%{time_total}\\n" http://192.168.42.67/
+      register: http_response_time
+
+    - name: Print HTTP response time
+      ansible.builtin.debug:
+        msg: "HTTP response time: {{ http_response_time.stdout }} seconds"
