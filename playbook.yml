@@ -1,0 +1,80 @@
+---
+- name: Deploy PHP Web Application with MySQL
+  hosts: webserver
+  become: true
+
+  vars:
+    db_name: userdb
+    db_user: webuser
+    db_pass: "webpass"
+
+  tasks:
+    - name: Install Apache, PHP, MySQL, and firewall tools
+      apt:
+        name:
+          - apache2
+          - php
+          - libapache2-mod-php
+          - php-mysql
+          - mysql-server
+          - ufw
+        update_cache: yes
+        state: present
+
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
+        policy: allow
+
+    - name: Allow HTTP (port 80) through firewall
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+
+    - name: Allow MySQL (port 3306) through firewall
+      ufw:
+        rule: allow
+        port: "3306"
+        proto: tcp
+
+    - name: Start and enable Apache
+      service:
+        name: apache2
+        state: started
+        enabled: true
+
+    - name: Start and enable MySQL
+      service:
+        name: mysql
+        state: started
+        enabled: true
+
+    - name: Copy web application files to web root
+      copy:
+        src: webapp/
+        dest: /var/www/html/
+        mode: '0644'
+        owner: www-data
+        group: www-data
+
+    - name: Create database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_pass }}"
+
+    - name: Create users table
+      mysql_query:
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_pass }}"
+        login_db: "{{ db_name }}"
+        query: |
+          CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(100) NOT NULL,
+            email VARCHAR(100) NOT NULL,
+            password VARCHAR(255) NOT NULL
+          );
+
